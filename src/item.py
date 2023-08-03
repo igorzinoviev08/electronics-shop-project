@@ -1,4 +1,5 @@
 import csv
+import os.path
 
 
 class Item:
@@ -54,12 +55,28 @@ class Item:
 
     @classmethod
     def instantiate_from_csv(cls, path="../src/items.csv"):
-        cls.all.clear()
-        with open(path, 'r', encoding='windows-1251') as fp:
-            file_reader = csv.DictReader(fp)
-            for row in file_reader:
-                cls(row['name'], float(row['price']), int(row['quantity']))
+        try:
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"Отсутствует файл {path.split('/')[-1]}")
+            cls.all.clear()
+            with open(path, 'r', encoding='windows-1251') as fp:
+                file_reader = csv.DictReader(fp)
+                for row in file_reader:
+                    if set(row) != {'name', 'price', 'quantity'}:
+                        raise InstantiateCSVError(path)
+
+                    cls(row['name'], float(row['price']), int(row['quantity']))
+        except FileNotFoundError:
+            raise
+
+        except InstantiateCSVError:
+            raise InstantiateCSVError(path)
 
     @staticmethod
     def string_to_number(value):
         return int(float(value))
+
+
+class InstantiateCSVError(Exception):
+    def __init__(self, path):
+        super().__init__(f"Файл {path.split('/')[-1]} поврежден")
